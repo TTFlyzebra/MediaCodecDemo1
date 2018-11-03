@@ -1,8 +1,6 @@
 package io.github.jiyangg.videoplayerdemo.player;
 
 
-import android.media.AudioFormat;
-import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.media.MediaCodec;
 import android.media.MediaExtractor;
@@ -12,6 +10,9 @@ import android.view.Surface;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+
+import io.github.jiyangg.videoplayerdemo.ByteTools;
+import io.github.jiyangg.videoplayerdemo.FlyLog;
 
 public class VideoPlayer {
     private static final String TAG = "TAG";
@@ -75,6 +76,13 @@ public class VideoPlayer {
         if (inputBufferIndex >= 0) {
             ByteBuffer inputBuffer = inputBuffers[inputBufferIndex];
             int sampleSize = extractor.readSampleData(inputBuffer, 0);
+
+            inputBuffer.mark();
+            byte send[] = new byte[inputBuffer.remaining()];
+            inputBuffer.get(send, 0, send.length);
+            inputBuffer.reset();
+            FlyLog.d("queueInputBuffer=%s", ByteTools.bytes2HexString(send));
+
             if (sampleSize < 0) {
                 decoder.queueInputBuffer(inputBufferIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
                 isMediaEOS = true;
@@ -135,10 +143,27 @@ public class VideoPlayer {
                 int width = mediaFormat.getInteger(MediaFormat.KEY_WIDTH);
                 int height = mediaFormat.getInteger(MediaFormat.KEY_HEIGHT);
                 float time = mediaFormat.getLong(MediaFormat.KEY_DURATION) / 1000000;
+                FlyLog.d(mediaFormat.toString());
                 callBack.videoAspect(width, height, time);
                 videoExtractor.selectTrack(videoTrackIndex);
                 try {
                     videoCodec = MediaCodec.createDecoderByType(mediaFormat.getString(MediaFormat.KEY_MIME));
+                    ByteBuffer byteBuffer1 = mediaFormat.getByteBuffer("csd-0");
+                    if(byteBuffer1!=null) {
+                        byteBuffer1.mark();
+                        byte csd_0[] = new byte[byteBuffer1.remaining()];
+                        byteBuffer1.get(csd_0, 0, csd_0.length);
+                        byteBuffer1.reset();
+                        FlyLog.d("csd-0=%s", ByteTools.bytes2HexStringAll(csd_0));
+                    }
+//                    ByteBuffer byteBuffer2 = mediaFormat.getByteBuffer("csd-1");
+//                    if(byteBuffer2!=null) {
+//                        byteBuffer2.mark();
+//                        byte csd_1[] = new byte[byteBuffer2.remaining()];
+//                        byteBuffer2.get(csd_1, 0, csd_1.length);
+//                        byteBuffer2.reset();
+//                        FlyLog.d("csd-1=%s", ByteTools.bytes2HexStringAll(csd_1));
+//                    }
                     videoCodec.configure(mediaFormat, surface, null, 0);
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -213,38 +238,38 @@ public class VideoPlayer {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            for (int i = 0; i < audioExtractor.getTrackCount(); i++) {
-                MediaFormat mediaFormat = audioExtractor.getTrackFormat(i);
-                String mime = mediaFormat.getString(MediaFormat.KEY_MIME);
-                if (mime.startsWith("audio/")) {
-                    audioExtractor.selectTrack(i);
-                    int audioChannels = mediaFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
-                    int audioSampleRate = mediaFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
-                    int minBufferSize = AudioTrack.getMinBufferSize(audioSampleRate,
-                            (audioChannels == 1 ? AudioFormat.CHANNEL_OUT_MONO : AudioFormat.CHANNEL_OUT_STEREO),
-                            AudioFormat.ENCODING_PCM_16BIT);
-                    int maxInputSize = mediaFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
-                    audioInputBufferSize = minBufferSize > 0 ? minBufferSize * 4 : maxInputSize;
-                    int frameSizeInBytes = audioChannels * 2;
-                    audioInputBufferSize = (audioInputBufferSize / frameSizeInBytes) * frameSizeInBytes;
-                    audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC,
-                            audioSampleRate,
-                            (audioChannels == 1 ? AudioFormat.CHANNEL_OUT_MONO : AudioFormat.CHANNEL_OUT_STEREO),
-                            AudioFormat.ENCODING_PCM_16BIT,
-                            audioInputBufferSize,
-                            AudioTrack.MODE_STREAM);
-                    audioTrack.play();
-                    Log.v(TAG, "audio play");
-                    //
-                    try {
-                        audioCodec = MediaCodec.createDecoderByType(mime);
-                        audioCodec.configure(mediaFormat, null, null, 0);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    break;
-                }
-            }
+//            for (int i = 0; i < audioExtractor.getTrackCount(); i++) {
+//                MediaFormat mediaFormat = audioExtractor.getTrackFormat(i);
+//                String mime = mediaFormat.getString(MediaFormat.KEY_MIME);
+//                if (mime.startsWith("audio/")) {
+//                    audioExtractor.selectTrack(i);
+//                    int audioChannels = mediaFormat.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
+//                    int audioSampleRate = mediaFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
+//                    int minBufferSize = AudioTrack.getMinBufferSize(audioSampleRate,
+//                            (audioChannels == 1 ? AudioFormat.CHANNEL_OUT_MONO : AudioFormat.CHANNEL_OUT_STEREO),
+//                            AudioFormat.ENCODING_PCM_16BIT);
+//                    int maxInputSize = mediaFormat.getInteger(MediaFormat.KEY_MAX_INPUT_SIZE);
+//                    audioInputBufferSize = minBufferSize > 0 ? minBufferSize * 4 : maxInputSize;
+//                    int frameSizeInBytes = audioChannels * 2;
+//                    audioInputBufferSize = (audioInputBufferSize / frameSizeInBytes) * frameSizeInBytes;
+//                    audioTrack = new AudioTrack(AudioManager.STREAM_MUSIC,
+//                            audioSampleRate,
+//                            (audioChannels == 1 ? AudioFormat.CHANNEL_OUT_MONO : AudioFormat.CHANNEL_OUT_STEREO),
+//                            AudioFormat.ENCODING_PCM_16BIT,
+//                            audioInputBufferSize,
+//                            AudioTrack.MODE_STREAM);
+//                    audioTrack.play();
+//                    Log.v(TAG, "audio play");
+//                    //
+//                    try {
+//                        audioCodec = MediaCodec.createDecoderByType(mime);
+//                        audioCodec.configure(mediaFormat, null, null, 0);
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                    }
+//                    break;
+//                }
+//            }
             if (audioCodec == null) {
                 Log.v(TAG, "audio decoder null");
                 return;

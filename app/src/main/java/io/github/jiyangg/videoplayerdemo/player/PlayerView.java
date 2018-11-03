@@ -45,6 +45,7 @@ public class PlayerView extends SurfaceView implements MediaController.MediaPlay
     }
 
     public void setVideoFilePath(String videoFilePath) {
+        Log.d("PlayerView","setVideoFilePath path="+videoFilePath);
         mVideoPlayer.setFilePath(videoFilePath);
     }
 
@@ -156,13 +157,17 @@ public class PlayerView extends SurfaceView implements MediaController.MediaPlay
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (event.getAction() == MotionEvent.ACTION_DOWN) {
-            if (mMediaController != null)
-                if (!mMediaController.isShowing()) {
-                    mMediaController.show();
-                } else {
-                    mMediaController.hide();
-                }
+        try {
+            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                if (mMediaController != null)
+                    if (!mMediaController.isShowing()) {
+                        mMediaController.show();
+                    } else {
+                        mMediaController.hide();
+                    }
+            }
+        }catch (Exception e){
+            e.printStackTrace();
         }
         return super.onTouchEvent(event);
     }
